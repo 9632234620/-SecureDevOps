@@ -37,6 +37,49 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 def get_database_connection():
+    def record_deployment(version, environment, status):
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_database_connection()
+        cursor = connection.cursor()
+
+        query = """
+        INSERT INTO deployments
+        (version, environment, status)
+        VALUES (%s, %s, %s)
+        """
+
+        cursor.execute(
+            query,
+            (version, environment, status)
+        )
+
+        connection.commit()
+
+        logger.info(
+            "DEPLOYMENT | Version: %s | Environment: %s | Status: %s",
+            version,
+            environment,
+            status
+        )
+
+    except Exception as error:
+
+        logger.error(
+            "DEPLOYMENT | Version: %s | Status: FAILED | Error: %s",
+            version,
+            error
+        )
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection:
+            connection.close()
 
     return mysql.connector.connect(
         host=os.environ.get("DB_HOST", "database"),
