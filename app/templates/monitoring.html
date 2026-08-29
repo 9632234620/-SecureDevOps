@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>SecureDevOps Monitoring</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f7ff;
+            margin: 0;
+        }
+
+        .header {
+            background: #1f4e79;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .container {
+            width: 90%;
+            margin: 35px auto;
+        }
+
+        .cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            width: 220px;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px #bbb;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: #1f4e79;
+        }
+
+        .status {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .healthy {
+            color: green;
+        }
+
+        .warning {
+            color: orange;
+        }
+
+        .table-box {
+            margin-top: 35px;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px #bbb;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #1f4e79;
+            color: white;
+        }
+
+        .button {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 12px 20px;
+            background: #1f4e79;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="header">
+
+    <h1>📊 SecureDevOps Monitoring Dashboard</h1>
+
+    <p>
+        Application, Database and Deployment Monitoring
+    </p>
+
+</div>
+
+
+<div class="container">
+
+
+    <h2>System Status</h2>
+
+
+    <div class="cards">
+
+
+        <!-- Application -->
+
+        <div class="card">
+
+            <h3>Application</h3>
+
+            <p class="status healthy">
+                🟢 {{ application_status }}
+            </p>
+
+        </div>
+
+
+        <!-- Database -->
+
+        <div class="card">
+
+            <h3>Database</h3>
+
+            <p class="status healthy">
+                🟢 {{ database_status }}
+            </p>
+
+        </div>
+
+
+        <!-- Docker -->
+
+        <div class="card">
+
+            <h3>Docker Container</h3>
+
+            <p class="status healthy">
+                🟢 {{ container_status }}
+            </p>
+
+        </div>
+
+
+        <!-- Users -->
+
+        <div class="card">
+
+            <h3>Total Users</h3>
+
+            <p class="status">
+                👥 {{ user_count }}
+            </p>
+
+        </div>
+
+
+        <!-- Deployments -->
+
+        <div class="card">
+
+            <h3>Total Deployments</h3>
+
+            <p class="status">
+                🚀 {{ deployment_count }}
+            </p>
+
+        </div>
+
+
+        <!-- Audit Logs -->
+
+        <div class="card">
+
+            <h3>Audit Events</h3>
+
+            <p class="status">
+                📋 {{ audit_count }}
+            </p>
+
+        </div>
+
+
+    </div>
+
+
+
+    <div class="table-box">
+
+        <h2>🚀 Latest Deployments</h2>
+
+
+        <table>
+
+            <tr>
+
+                <th>ID</th>
+
+                <th>Version</th>
+
+                <th>Environment</th>
+
+                <th>Status</th>
+
+                <th>Created At</th>
+
+            </tr>
+
+
+            {% for deployment in deployments %}
+
+            <tr>
+
+                <td>
+                    {{ deployment.id }}
+                </td>
+
+                <td>
+                    {{ deployment.version }}
+                </td>
+
+                <td>
+                    {{ deployment.environment }}
+                </td>
+
+                <td>
+                    {{ deployment.status }}
+                </td>
+
+                <td>
+                    {{ deployment.created_at }}
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+
+        </table>
+
+    </div>
+
+
+
+    <div class="table-box">
+
+        <h2>📋 Recent Security Activity</h2>
+
+
+        <table>
+
+            <tr>
+
+                <th>Username</th>
+
+                <th>Action</th>
+
+                <th>Status</th>
+
+                <th>IP Address</th>
+
+                <th>Time</th>
+
+            </tr>
+
+
+            {% for log in audit_logs %}
+
+            <tr>
+
+                <td>
+                    {{ log.username }}
+                </td>
+
+                <td>
+                    {{ log.action }}
+                </td>
+
+                <td>
+                    {{ log.status }}
+                </td>
+
+                <td>
+                    {{ log.ip_address }}
+                </td>
+
+                <td>
+                    {{ log.created_at }}
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+
+        </table>
+
+    </div>
+
+
+    <a class="button" href="/dashboard">
+        ← Back to Dashboard
+    </a>
+
+
+    <a class="button" href="/monitoring">
+        🔄 Refresh Monitoring
+    </a>
+
+
+</div>
+
+
+</body>
+
+</html>

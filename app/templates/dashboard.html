@@ -1,0 +1,270 @@
+<<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>SecureDevOps Monitoring Dashboard</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f7ff;
+            margin: 0;
+        }
+
+        .header {
+            background: #1f4e79;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .container {
+            width: 90%;
+            margin: 35px auto;
+        }
+
+        .card-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            width: 210px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #bbb;
+        }
+
+        .card h3 {
+            margin-top: 0;
+        }
+
+        .status {
+            color: green;
+            font-weight: bold;
+            font-size: 17px;
+        }
+
+        .section {
+            background: white;
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #ccc;
+        }
+
+        .logs {
+            background: #111827;
+            color: #e5e7eb;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: Consolas, monospace;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .logout {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 12px 25px;
+            background: #d9534f;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .refresh {
+            display: inline-block;
+            margin-top: 25px;
+            margin-left: 10px;
+            padding: 12px 25px;
+            background: #1f4e79;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .info-list {
+            line-height: 1.9;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="header">
+
+    <h1>🔐 SecureDevOps Monitoring Dashboard</h1>
+
+    <p>Zero-Trust Containerized Application Deployment and Monitoring Platform</p>
+
+</div>
+
+
+
+<div class="container">
+
+
+    <h2>Welcome, {{ username }} 👋</h2>
+
+    <p>
+        Your Role:
+        <strong>{{ role }}</strong>
+    </p>
+
+
+    <!-- SYSTEM STATUS -->
+
+    <div class="card-container">
+
+
+        <div class="card">
+
+            <h3>Application</h3>
+
+            <p class="status">
+                🟢 Running
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Database</h3>
+
+            <p class="status">
+                🟢 Connected
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Security</h3>
+
+            <p class="status">
+                🟢 Active
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Container</h3>
+
+            <p class="status">
+                🟢 Running
+            </p>
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- SYSTEM INFORMATION -->
+
+    <div class="section">
+
+        <h2>📊 System Information</h2>
+
+        <ul class="info-list">
+
+            <li>
+                🔐 Zero Trust Authentication:
+                <strong>Enabled</strong>
+            </li>
+
+            <li>
+                🐳 Docker Containerization:
+                <strong>Enabled</strong>
+            </li>
+
+            <li>
+                🗄️ Database:
+                <strong>MySQL 8.4</strong>
+            </li>
+
+            <li>
+                🛡️ Security Monitoring:
+                <strong>Active</strong>
+            </li>
+
+            <li>
+                📋 Activity Logging:
+                <strong>Enabled</strong>
+            </li>
+
+            <li>
+                ❤️ Application Health:
+                <strong>Healthy</strong>
+            </li>
+
+        </ul>
+
+    </div>
+
+
+
+    <!-- ACTIVITY LOGS -->
+
+    <div class="section">
+
+        <h2>📋 Security & Activity Logs</h2>
+
+        <p>
+            Recent application and security activities:
+        </p>
+
+        <div class="logs">
+
+{% if logs %}
+
+{% for log in logs %}
+
+{{ log }}
+
+{% endfor %}
+
+{% else %}
+
+No activity logs available.
+
+{% endif %}
+
+        </div>
+
+    </div>
+
+
+
+    <!-- BUTTONS -->
+
+    <a class="refresh" href="/dashboard">
+        🔄 Refresh Dashboard
+    </a>
+
+    <a class="logout" href="/logout">
+        🚪 Logout
+    </a>
+
+
+</div>
+
+
+</body>
+
+</html>

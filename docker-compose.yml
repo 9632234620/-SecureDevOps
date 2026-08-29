@@ -1,0 +1,61 @@
+services:
+
+  app:
+    build:
+      context: ./app
+
+    container_name: securedevops-app
+
+    ports:
+      - "5000:5000"
+
+    environment:
+      SECRET_KEY: securedevops-production-secret-key
+      DB_HOST: database
+      DB_USER: root
+      DB_PASSWORD: rootpassword
+      DB_NAME: securedevops
+
+    depends_on:
+      database:
+        condition: service_healthy
+
+    volumes:
+      - ./logs:/app/logs
+
+
+  database:
+    image: mysql:8.4
+
+    container_name: securedevops-db
+
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: securedevops
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-uroot",
+          "-prootpassword"
+        ]
+
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+  mysql_data:
