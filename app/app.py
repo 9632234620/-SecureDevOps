@@ -21,10 +21,18 @@ app.secret_key = os.environ.get(
 # LOGGING CONFIGURATION
 # ============================================================
 
-os.makedirs("/app/logs", exist_ok=True)
+# Use a directory relative to the application.
+# This works both in Docker and GitHub Actions.
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+
+os.makedirs(LOG_DIR, exist_ok=True)
+
+LOG_FILE = os.path.join(LOG_DIR, "app.log")
 
 logging.basicConfig(
-    filename="/app/logs/app.log",
+    filename=LOG_FILE,
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s"
 )
@@ -37,12 +45,40 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 def get_database_connection():
-    def record_deployment(version, environment, status):
+
+    return mysql.connector.connect(
+        host=os.environ.get(
+            "DB_HOST",
+            "database"
+        ),
+        user=os.environ.get(
+            "DB_USER",
+            "root"
+        ),
+        password=os.environ.get(
+            "DB_PASSWORD",
+            "rootpassword"
+        ),
+        database=os.environ.get(
+            "DB_NAME",
+            "securedevops"
+        )
+    )
+
+
+# ============================================================
+# DEPLOYMENT LOG FUNCTION
+# ============================================================
+
+def record_deployment(version, environment, status):
+
     connection = None
     cursor = None
 
     try:
+
         connection = get_database_connection()
+
         cursor = connection.cursor()
 
         query = """
@@ -53,7 +89,11 @@ def get_database_connection():
 
         cursor.execute(
             query,
-            (version, environment, status)
+            (
+                version,
+                environment,
+                status
+            )
         )
 
         connection.commit()
@@ -81,19 +121,17 @@ def get_database_connection():
         if connection:
             connection.close()
 
-    return mysql.connector.connect(
-        host=os.environ.get("DB_HOST", "database"),
-        user=os.environ.get("DB_USER", "root"),
-        password=os.environ.get("DB_PASSWORD", "rootpassword"),
-        database=os.environ.get("DB_NAME", "securedevops")
-    )
-
 
 # ============================================================
 # AUDIT LOG FUNCTION
 # ============================================================
 
-def create_audit_log(username, action, status, ip_address):
+def create_audit_log(
+    username,
+    action,
+    status,
+    ip_address
+):
 
     connection = None
     cursor = None
@@ -211,7 +249,10 @@ def home():
 # REGISTER
 # ============================================================
 
-@app.route("/register", methods=["GET", "POST"])
+@app.route(
+    "/register",
+    methods=["GET", "POST"]
+)
 def register():
 
     if request.method == "POST":
@@ -254,7 +295,6 @@ def register():
             </a>
             """
 
-        # Hash password
         hashed_password = generate_password_hash(
             password
         )
@@ -345,7 +385,10 @@ def register():
 # LOGIN
 # ============================================================
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route(
+    "/login",
+    methods=["GET", "POST"]
+)
 def login():
 
     if request.method == "POST":
@@ -374,7 +417,12 @@ def login():
             )
 
             query = """
-            SELECT id, username, email, password, role
+            SELECT
+                id,
+                username,
+                email,
+                password,
+                role
             FROM users
             WHERE username = %s
             """
@@ -392,7 +440,6 @@ def login():
             ):
 
                 session["username"] = user["username"]
-
                 session["role"] = user["role"]
 
                 logger.info(
@@ -539,7 +586,8 @@ def admin():
 
     username = session["username"]
 
-    # RBAC
+    # Role Based Access Control
+
     if session.get("role") != "admin":
 
         logger.warning(
@@ -599,7 +647,11 @@ def admin():
 
         cursor.execute(
             """
-            SELECT id, username, email, role
+            SELECT
+                id,
+                username,
+                email,
+                role
             FROM users
             ORDER BY id
             """
@@ -614,12 +666,13 @@ def admin():
         cursor = None
 
         # Read application logs
+
         logs = []
 
         try:
 
             with open(
-                "/app/logs/app.log",
+                LOG_FILE,
                 "r"
             ) as file:
 
@@ -674,14 +727,18 @@ def admin():
 
         if connection:
             connection.close()
-            # ============================================================
+
+
+# ============================================================
 # DEPLOYMENT MANAGEMENT
 # ============================================================
 
-@app.route("/deployments", methods=["GET", "POST"])
+@app.route(
+    "/deployments",
+    methods=["GET", "POST"]
+)
 def deployments():
 
-    # User must be logged in
     if "username" not in session:
 
         create_audit_log(
@@ -821,14 +878,15 @@ def deployments():
 
         if connection:
             connection.close()
-            # ============================================================
+
+
+# ============================================================
 # MONITORING DASHBOARD
 # ============================================================
 
 @app.route("/monitoring")
 def monitoring():
 
-    # User must be logged in
     if "username" not in session:
 
         create_audit_log(
@@ -856,7 +914,7 @@ def monitoring():
         )
 
         # ----------------------------------------------------
-        # CHECK DATABASE
+        # DATABASE STATUS
         # ----------------------------------------------------
 
         database_status = "Connected"
