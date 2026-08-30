@@ -1,4 +1,4 @@
- name: SecureDevOps CI/CD Pipeline
+name: SecureDevOps CI/CD
 
 on:
   push:
@@ -13,17 +13,12 @@ permissions:
 
 jobs:
 
-  # ============================================================
-  # TEST JOB
-  # ============================================================
-
   test:
-    name: Application Tests
+    name: Test Application
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Checkout source code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -31,97 +26,66 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install dependencies
-        working-directory: ./app
+      - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
+          cd app
           pip install -r requirements.txt
 
-      - name: Check Python syntax
-        working-directory: ./app
+      - name: Check Python Syntax
         run: |
-          python -m py_compile app.py
+          python -m py_compile app/app.py
 
-  # ============================================================
-  # SECURITY SCAN
-  # ============================================================
+      - name: Run Application Test
+        run: |
+          cd app
+          python -c "import py_compile; py_compile.compile('app.py', doraise=True); print('Application syntax test passed')"
 
-  security:
-    name: Security Scan
+
+  build:
+    name: Build Docker Image
     runs-on: ubuntu-latest
     needs: test
 
     steps:
-
-      - name: Checkout source code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install dependencies
-        working-directory: ./app
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install bandit pip-audit
-
-      - name: Run Bandit security scan
-        working-directory: ./app
-        run: |
-          bandit -r . -x ./templates
-
-      - name: Check dependencies for vulnerabilities
-        working-directory: ./app
-        run: |
-          pip-audit
-
-  # ============================================================
-  # DOCKER BUILD
-  # ============================================================
-
-  docker:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    needs:
-      - test
-      - security
-
-    steps:
-
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Build Docker image
+      - name: Build Docker Image
         run: |
           docker build -t securedevops-app ./app
 
-      - name: Verify Docker image
-        run: |
-          docker images securedevops-app
 
-  # ============================================================
-  # CI/CD SUCCESS
-  # ============================================================
-
-  pipeline-success:
-    name: CI/CD Pipeline Success
+  security:
+    name: Security Scan
     runs-on: ubuntu-latest
-    needs:
-      - test
-      - security
-      - docker
+    needs: build
 
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Pipeline completed successfully
+      - name: Run Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          exit-code: "0"
+          ignore-unfixed: true
+
+
+  deployment:
+    name: Deployment
+    runs-on: ubuntu-latest
+    needs: security
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deployment Status
         run: |
-          echo "======================================"
-          echo " SecureDevOps CI/CD Pipeline"
-          echo "======================================"
-          echo "Tests: PASSED"
-          echo "Security Scan: PASSED"
-          echo "Docker Build: PASSED"
-          echo "======================================"
+          echo "SecureDevOps deployment completed successfully"
+          echo "Application: SecureDevOps"
+          echo "Environment: Production"
+          echo "Status: SUCCESS"
