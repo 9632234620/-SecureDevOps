@@ -21,9 +21,6 @@ app.secret_key = os.environ.get(
 # LOGGING CONFIGURATION
 # ============================================================
 
-# Use a directory relative to the application.
-# This works both in Docker and GitHub Actions.
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 
@@ -45,24 +42,11 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 def get_database_connection():
-
     return mysql.connector.connect(
-        host=os.environ.get(
-            "DB_HOST",
-            "database"
-        ),
-        user=os.environ.get(
-            "DB_USER",
-            "root"
-        ),
-        password=os.environ.get(
-            "DB_PASSWORD",
-            "rootpassword"
-        ),
-        database=os.environ.get(
-            "DB_NAME",
-            "securedevops"
-        )
+        host=os.environ.get("DB_HOST", "database"),
+        user=os.environ.get("DB_USER", "root"),
+        password=os.environ.get("DB_PASSWORD", "rootpassword"),
+        database=os.environ.get("DB_NAME", "securedevops")
     )
 
 
@@ -71,14 +55,11 @@ def get_database_connection():
 # ============================================================
 
 def record_deployment(version, environment, status):
-
     connection = None
     cursor = None
 
     try:
-
         connection = get_database_connection()
-
         cursor = connection.cursor()
 
         query = """
@@ -89,11 +70,7 @@ def record_deployment(version, environment, status):
 
         cursor.execute(
             query,
-            (
-                version,
-                environment,
-                status
-            )
+            (version, environment, status)
         )
 
         connection.commit()
@@ -106,7 +83,6 @@ def record_deployment(version, environment, status):
         )
 
     except Exception as error:
-
         logger.error(
             "DEPLOYMENT | Version: %s | Status: FAILED | Error: %s",
             version,
@@ -114,7 +90,6 @@ def record_deployment(version, environment, status):
         )
 
     finally:
-
         if cursor:
             cursor.close()
 
@@ -126,20 +101,12 @@ def record_deployment(version, environment, status):
 # AUDIT LOG FUNCTION
 # ============================================================
 
-def create_audit_log(
-    username,
-    action,
-    status,
-    ip_address
-):
-
+def create_audit_log(username, action, status, ip_address):
     connection = None
     cursor = None
 
     try:
-
         connection = get_database_connection()
-
         cursor = connection.cursor()
 
         query = """
@@ -161,14 +128,12 @@ def create_audit_log(
         connection.commit()
 
     except Exception as error:
-
         logger.error(
             "AUDIT LOG ERROR | %s",
             error
         )
 
     finally:
-
         if cursor:
             cursor.close()
 
@@ -182,18 +147,14 @@ def create_audit_log(
 
 @app.route("/")
 def home():
-
     return """
     <!DOCTYPE html>
-
     <html>
-
     <head>
-
+        <meta charset="UTF-8">
         <title>SecureDevOps</title>
 
         <style>
-
             body {
                 font-family: Arial;
                 text-align: center;
@@ -214,13 +175,10 @@ def home():
                 text-decoration: none;
                 border-radius: 5px;
             }
-
         </style>
-
     </head>
 
     <body>
-
         <h1>🔐 SecureDevOps</h1>
 
         <h2>
@@ -238,9 +196,7 @@ def home():
         <a href="/login">
             Login
         </a>
-
     </body>
-
     </html>
     """
 
@@ -305,7 +261,6 @@ def register():
         try:
 
             connection = get_database_connection()
-
             cursor = connection.cursor()
 
             query = """
@@ -525,6 +480,7 @@ def login():
 
 # ============================================================
 # USER DASHBOARD
+# IMPORTANT: THERE IS ONLY ONE /dashboard ROUTE
 # ============================================================
 
 @app.route("/dashboard")
@@ -550,6 +506,8 @@ def dashboard():
         username
     )
 
+    # Record this dashboard visit first so it can appear
+    # in the activity logs on the same page.
     create_audit_log(
         username,
         "DASHBOARD_ACCESS",
@@ -557,10 +515,60 @@ def dashboard():
         request.remote_addr
     )
 
+    connection = None
+    cursor = None
+
+    try:
+
+        connection = get_database_connection()
+
+        cursor = connection.cursor(
+            dictionary=True
+        )
+
+        # ----------------------------------------------------
+        # GET RECENT ACTIVITY LOGS
+        # ----------------------------------------------------
+
+        cursor.execute(
+            """
+            SELECT
+                username,
+                action,
+                status,
+                ip_address,
+                created_at
+            FROM audit_logs
+            ORDER BY id DESC
+            LIMIT 10
+            """
+        )
+
+        logs = cursor.fetchall()
+
+    except mysql.connector.Error as error:
+
+        logger.error(
+            "DASHBOARD LOG ERROR | Username: %s | Error: %s",
+            username,
+            error
+        )
+
+        logs = []
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection:
+            connection.close()
+
     return render_template(
         "dashboard.html",
         username=username,
-        role=session["role"]
+        role=session["role"],
+        logs=logs
     )
 
 
@@ -585,15 +593,10 @@ def admin():
         )
 
     username = session["username"]
+    role = session.get("role")
 
-    # Role Based Access Control
-
-    if session.get("role") != "admin":
-
-        logger.warning(
-            "ADMIN ACCESS DENIED | Username: %s | Status: DENIED",
-            username
-        )
+    # Only admin users are allowed.
+    if role != "admin":
 
         create_audit_log(
             username,
@@ -602,37 +605,34 @@ def admin():
             request.remote_addr
         )
 
+        logger.warning(
+            "ADMIN ACCESS DENIED | Username: %s",
+            username
+        )
+
         return """
-        <!DOCTYPE html>
+        <h2>❌ Access Denied</h2>
 
-        <html>
+        <p>
+            You do not have administrator privileges.
+        </p>
 
-        <head>
-
-            <title>Access Denied</title>
-
-        </head>
-
-        <body style="text-align:center; margin-top:150px;">
-
-            <h1>🚫 Access Denied</h1>
-
-            <h2>
-                Admin privileges required
-            </h2>
-
-            <p>
-                You do not have permission to access this page.
-            </p>
-
-            <a href="/dashboard">
-                Back to Dashboard
-            </a>
-
-        </body>
-
-        </html>
+        <a href="/dashboard">
+            Back to Dashboard
+        </a>
         """
+
+    create_audit_log(
+        username,
+        "ADMIN_ACCESS",
+        "SUCCESS",
+        request.remote_addr
+    )
+
+    logger.info(
+        "ADMIN ACCESS | Username: %s | Status: SUCCESS",
+        username
+    )
 
     connection = None
     cursor = None
@@ -653,72 +653,21 @@ def admin():
                 email,
                 role
             FROM users
-            ORDER BY id
+            ORDER BY id DESC
             """
         )
 
         users = cursor.fetchall()
 
-        cursor.close()
-        connection.close()
-
-        connection = None
-        cursor = None
-
-        # Read application logs
-
-        logs = []
-
-        try:
-
-            with open(
-                LOG_FILE,
-                "r"
-            ) as file:
-
-                logs = file.readlines()[-30:]
-
-        except Exception as error:
-
-            logs = [
-                "Unable to read logs: " + str(error)
-            ]
-
-        create_audit_log(
-            username,
-            "ADMIN_ACCESS",
-            "SUCCESS",
-            request.remote_addr
-        )
-
-        return render_template(
-            "admin.html",
-            username=username,
-            users=users,
-            logs=logs
-        )
-
     except mysql.connector.Error as error:
 
         logger.error(
-            "ADMIN DATABASE ERROR | Error: %s",
+            "ADMIN DATABASE ERROR | Username: %s | Error: %s",
+            username,
             error
         )
 
-        create_audit_log(
-            username,
-            "ADMIN_ACCESS",
-            "DATABASE_ERROR",
-            request.remote_addr
-        )
-
-        return """
-        <h2>❌ Database Error</h2>
-
-        <a href="/dashboard">
-            Back to Dashboard
-        </a>
-        """
+        users = []
 
     finally:
 
@@ -727,6 +676,13 @@ def admin():
 
         if connection:
             connection.close()
+
+    return render_template(
+        "admin.html",
+        username=username,
+        role=role,
+        users=users
+    )
 
 
 # ============================================================
@@ -989,11 +945,12 @@ def monitoring():
 
         audit_log_list = cursor.fetchall()
 
+        # Close before creating the monitoring audit event.
         cursor.close()
         connection.close()
 
-        connection = None
         cursor = None
+        connection = None
 
         # ----------------------------------------------------
         # APPLICATION STATUS
@@ -1109,7 +1066,6 @@ def health():
     try:
 
         connection = get_database_connection()
-
         connection.close()
 
         return {
